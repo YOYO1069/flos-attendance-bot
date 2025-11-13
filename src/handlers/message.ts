@@ -49,6 +49,8 @@ export async function handleTextMessage(
     await handleCheckOut(event, userId);
   } else if (trimmedText === '查詢打卡') {
     await handleCheckStatus(event, userId);
+  } else if (trimmedText === '預約' || trimmedText === '線上預約') {
+    await handleBooking(event, clinic);
   } else {
     // Unknown command
     console.log('ℹ️ Unknown command:', trimmedText);
@@ -247,6 +249,81 @@ async function handleCheckStatus(event: MessageEvent, userId: string): Promise<v
     event.replyToken,
     `📋 今日打卡狀態\n姓名：${employee.name}\n上班：${checkInTime}\n下班：${checkOutTime}\n工時：${hours} 小時 ${minutes} 分鐘`
   );
+}
+
+async function handleBooking(event: MessageEvent, clinic: any): Promise<void> {
+  // Send Flex Message with booking button
+  const flexMessage = {
+    type: 'flex',
+    altText: '線上預約',
+    contents: {
+      type: 'bubble',
+      hero: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'text',
+            text: '線上預約',
+            weight: 'bold',
+            size: 'xl',
+            color: '#ffffff',
+          },
+        ],
+        paddingAll: '20px',
+        backgroundColor: '#1e3a8a',
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        contents: [
+          {
+            type: 'text',
+            text: clinic.name,
+            weight: 'bold',
+            size: 'lg',
+            margin: 'md',
+          },
+          {
+            type: 'text',
+            text: '請點擊下方按鈕進行線上預約',
+            size: 'sm',
+            color: '#999999',
+            margin: 'md',
+            wrap: true,
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            height: 'sm',
+            action: {
+              type: 'uri',
+              label: '立即預約',
+              uri: `https://rad-paletas-14483a.netlify.app/booking/${clinic.id}`,
+            },
+          },
+        ],
+        flex: 0,
+      },
+    },
+  };
+
+  try {
+    await client.replyMessage(event.replyToken, flexMessage as any);
+  } catch (error) {
+    console.error('❌ Error sending flex message:', error);
+    await replyMessage(
+      event.replyToken,
+      `請點擊以下連結進行預約：\nhttps://rad-paletas-14483a.netlify.app/booking/${clinic.id}`
+    );
+  }
 }
 
 async function replyMessage(replyToken: string, text: string): Promise<void> {
