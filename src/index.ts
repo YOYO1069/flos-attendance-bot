@@ -2,6 +2,7 @@ import express from 'express';
 import { middleware, WebhookEvent } from '@line/bot-sdk';
 import { config } from './config.js';
 import { handleWebhook } from './handlers/webhook.js';
+import { sendBookingConfirmation } from './handlers/booking.js';
 
 const app = express();
 const PORT = config.port;
@@ -13,6 +14,26 @@ app.get('/', (req, res) => {
     service: 'FLOS Attendance Bot',
     timestamp: new Date().toISOString()
   });
+});
+
+// Booking confirmation webhook (called by dashboard after booking creation)
+app.post('/api/booking-confirmation', express.json(), async (req, res) => {
+  try {
+    const bookingData = req.body;
+    
+    // Validate required fields
+    if (!bookingData.channelId || !bookingData.customerName || !bookingData.appointmentDate) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    // Send confirmation to LINE group
+    await sendBookingConfirmation(bookingData);
+    
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('❌ Booking confirmation error:', error);
+    res.status(500).json({ error: 'Failed to send confirmation' });
+  }
 });
 
 // LINE webhook endpoint
